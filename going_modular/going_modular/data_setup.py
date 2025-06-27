@@ -104,3 +104,56 @@ def split_dataset(images_dir, train_dir, test_dir, train_ratio=0.8, seed=42):
 
     print(f"\n✅ Done! Train images in '{train_dir}', test images in '{test_dir}'")
 
+import os
+import random
+import shutil
+from pathlib import Path
+from tqdm import tqdm
+
+def sample_subset_from_dataset(
+    src_dir,
+    dst_dir,
+    fraction=0.2,
+    seed=42,
+    file_types=(".jpg", ".jpeg", ".png")
+):
+    """
+    Copies a fraction of images from each class folder in src_dir to dst_dir.
+    Class folder structure is preserved. Sampling is reproducible via seed.
+
+    Args:
+        src_dir (str or Path): Root directory with class subfolders.
+        dst_dir (str or Path): Destination directory to store the subset.
+        fraction (float): Fraction of images to sample per class (0.0–1.0).
+        seed (int): Seed for random sampling.
+        file_types (tuple): Allowed image file extensions.
+    """
+    random.seed(seed)
+    src_dir = Path(src_dir)
+    dst_dir = Path(dst_dir)
+    dst_dir.mkdir(parents=True, exist_ok=True)
+
+    total_classes = 0
+    total_images_copied = 0
+
+    for class_dir in tqdm(sorted(src_dir.iterdir()), desc="Processing classes"):
+        if not class_dir.is_dir():
+            continue
+
+        images = [img for img in class_dir.iterdir() if img.suffix.lower() in file_types]
+        if len(images) == 0:
+            continue
+
+        sample_size = max(1, int(len(images) * fraction))
+        sampled_images = random.sample(images, sample_size)
+
+        dst_class_dir = dst_dir / class_dir.name
+        dst_class_dir.mkdir(parents=True, exist_ok=True)
+
+        for img in sampled_images:
+            shutil.copy(img, dst_class_dir / img.name)
+
+        total_classes += 1
+        total_images_copied += len(sampled_images)
+
+    print(f"\n✅ Sampled {total_images_copied} images from {total_classes} classes into '{dst_dir}'.")
