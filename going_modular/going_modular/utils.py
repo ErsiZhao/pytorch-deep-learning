@@ -81,3 +81,47 @@ def get_sorted_checkpoints(
 
     return sorted_pth_files
 
+import smtplib
+from email.mime.text import MIMEText
+
+def send_email_notification(
+    subject: str,
+    body: str,
+    to_email: str,
+    from_email: str,
+    app_password: str,
+    quit_runtime: bool = True
+):
+    """
+    Sends an email notification using Gmail's SMTP.
+
+    Args:
+        subject (str): Subject of the email.
+        body (str): Body text of the email.
+        to_email (str): Recipient email address.
+        from_email (str): Sender Gmail address.
+        app_password (str): App-specific Gmail password.
+        quit_runtime (bool): Whether to shut down the Colab runtime after sending.
+    """
+    msg = MIMEText(body)
+    msg['Subject'] = subject
+    msg['From'] = from_email
+    msg['To'] = to_email
+
+    try:
+        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        server.login(from_email, app_password)
+        server.sendmail(from_email, to_email, msg.as_string())
+        server.quit()
+        print('📬 Email notification sent successfully.')
+    except Exception as e:
+        print(f'❌ Failed to send email: {e}')
+
+    if quit_runtime:
+        try:
+            from google.colab import runtime
+            runtime.unassign()
+        except Exception as e:
+            print(f'⚠️ Failed to quit Colab runtime: {e}')
+
+
