@@ -63,3 +63,44 @@ def create_dataloaders(
   )
 
   return train_dataloader, test_dataloader, class_names
+
+
+
+import random
+import shutil
+from pathlib import Path
+from tqdm import tqdm
+
+def split_dataset(images_dir, train_dir, test_dir, train_ratio=0.8, seed=42):
+    random.seed(seed)
+    images_dir = Path(images_dir)
+    train_dir = Path(train_dir)
+    test_dir = Path(test_dir)
+
+    train_dir.mkdir(parents=True, exist_ok=True)
+    test_dir.mkdir(parents=True, exist_ok=True)
+
+    for class_dir in tqdm(sorted(images_dir.iterdir()), desc="Processing classes"):
+        if not class_dir.is_dir():
+            continue
+
+        class_name = class_dir.name
+        images = list(class_dir.glob("*.jpg"))
+        random.shuffle(images)
+
+        split_idx = int(len(images) * train_ratio)
+        train_images = images[:split_idx]
+        test_images = images[split_idx:]
+
+        train_class_dir = train_dir / class_name
+        train_class_dir.mkdir(parents=True, exist_ok=True)
+        for img in train_images:
+            shutil.copy(img, train_class_dir / img.name)
+
+        test_class_dir = test_dir / class_name
+        test_class_dir.mkdir(parents=True, exist_ok=True)
+        for img in test_images:
+            shutil.copy(img, test_class_dir / img.name)
+
+    print(f"\n✅ Done! Train images in '{train_dir}', test images in '{test_dir}'")
+
